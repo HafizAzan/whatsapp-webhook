@@ -1,0 +1,42 @@
+{
+  "language": {
+    "label": "Language",
+    "english": "English",
+    "romanUrdu": "Roman Urdu"
+  },
+  "login": {
+    "subtitle": "Sign in with WhatsApp",
+    "channelLink": "Channel Link",
+    "qrScan": "QR Scan",
+    "phoneCode": "Phone + Code",
+    "qrInstructions": "WhatsApp → Linked Devices → Link a Device → Scan QR",
+    "qrRefresh": "QR refreshes in ~20 sec",
+    "pairingInstructions": "WhatsApp → Linked Devices → Link with phone number",
+    "enterCodeOnPhone": "Enter this code on your phone",
+    "sessionStarting": "Starting session...",
+    "cancelling": "Cancelling...",
+    "cancel": "Cancel",
+    "qrDescription": "Generate a QR code and scan it with your phone. The dashboard opens after you connect.",
+    "starting": "Starting...",
+    "generateQr": "Generate QR Code",
+    "pairingDescription": "Enter your WhatsApp number — a code will arrive on your phone to enter here.",
+    "pairingSessionNote": "Format: 923166723252 (no + or spaces). Old linked account is cleared first. Enter the code only on that same phone.",
+    "phonePlaceholder": "923001234567",
+    "sendingCode": "Sending code...",
+    "sendPairingCode": "Send pairing code",
+    "footer": "No data or routes are accessible without a channel link"
+  },
+  "status": {
+    "disconnected": "Offline",
+    "initializing": "Starting...",
+    "qr": "Scan QR",
+    "pairing": "Enter code",
+    "authenticated": "Syncing...",
+    "ready": "Connected",
+    "error": "Error"
+  },
+  "errors": {
+    "connectFailed": "Connect failed — check the server",
+    "pairingFailed": "Pairing could not start — check the number"
+  }
+}

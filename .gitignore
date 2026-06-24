@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# whatsapp-web.js session
+/data/.wwebjs_auth/
+/data/.wwebjs_cache/
+/data/.puppeteer/
+/data/media/
+/data/media-index.json

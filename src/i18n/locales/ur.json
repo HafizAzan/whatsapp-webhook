@@ -1,0 +1,42 @@
+{
+  "language": {
+    "label": "Zubaan",
+    "english": "English",
+    "romanUrdu": "Roman Urdu"
+  },
+  "login": {
+    "subtitle": "WhatsApp se login karein",
+    "channelLink": "Channel Link",
+    "qrScan": "QR Scan",
+    "phoneCode": "Phone + Code",
+    "qrInstructions": "WhatsApp → Linked Devices → Link a Device → QR scan karein",
+    "qrRefresh": "QR ~20 sec mein refresh hota hai",
+    "pairingInstructions": "WhatsApp → Linked Devices → Link with phone number",
+    "enterCodeOnPhone": "Yeh code phone par enter karein",
+    "sessionStarting": "Session start ho rahi hai...",
+    "cancelling": "Cancel ho raha hai...",
+    "cancel": "Cancel",
+    "qrDescription": "QR code generate karein aur apne phone se scan karein. Connect hone ke baad dashboard khul jayega.",
+    "starting": "Start ho raha hai...",
+    "generateQr": "QR Code banayein",
+    "pairingDescription": "Apna WhatsApp number daalein — phone par code aayega, yahan enter karein.",
+    "pairingSessionNote": "Format: 923166723252 (+ ya space ke baghair). Purana linked account pehle clear hoga. Code sirf usi phone par enter karein.",
+    "phonePlaceholder": "923001234567",
+    "sendingCode": "Code bheja ja raha hai...",
+    "sendPairingCode": "Pairing code bhejein",
+    "footer": "Bina channel link ke koi data ya route accessible nahi hoga"
+  },
+  "status": {
+    "disconnected": "Offline",
+    "initializing": "Start ho raha hai...",
+    "qr": "QR scan karein",
+    "pairing": "Code daalein",
+    "authenticated": "Sync ho raha hai...",
+    "ready": "Connected",
+    "error": "Error"
+  },
+  "errors": {
+    "connectFailed": "Connect fail — server check karein",
+    "pairingFailed": "Pairing start nahi hui — number check karein"
+  }
+}
