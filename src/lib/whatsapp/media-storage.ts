@@ -1,9 +1,19 @@
-import { access } from "fs/promises";
+import { access, readFile } from "fs/promises";
 import { promises as fs } from "fs";
 import path from "path";
 import type { Message } from "whatsapp-web.js";
+import { isDbEnabled } from "@/lib/db/config";
+import {
+  dbGetMediaRecord,
+  dbListSavedMediaForChat,
+  dbMediaFileExists,
+  dbRemoveMediaRecord,
+  dbSaveMediaRecord,
+  dbGetMediaBytes,
+} from "@/lib/db/media";
+import { getDataDir } from "@/lib/data-dir";
 
-const DATA_DIR = path.join(process.cwd(), "data");
+const DATA_DIR = getDataDir();
 const MEDIA_DIR = path.join(DATA_DIR, "media");
 const INDEX_PATH = path.join(DATA_DIR, "media-index.json");
 
@@ -32,7 +42,7 @@ export interface SavedMediaRecord {
 
 type MediaIndex = Record<string, SavedMediaRecord>;
 
-async function readIndex(): Promise<MediaIndex> {
+async function readIndexFile(): Promise<MediaIndex> {
   try {
     const raw = await fs.readFile(INDEX_PATH, "utf-8");
     return JSON.parse(raw) as MediaIndex;
@@ -41,7 +51,7 @@ async function readIndex(): Promise<MediaIndex> {
   }
 }
 
-async function writeIndex(index: MediaIndex) {
+async function writeIndexFile(index: MediaIndex) {
   await fs.mkdir(DATA_DIR, { recursive: true });
   await fs.writeFile(INDEX_PATH, JSON.stringify(index, null, 2), "utf-8");
 }
@@ -86,7 +96,8 @@ export function isViewOnceMessage(msg: Message): boolean {
 }
 
 export async function listSavedMediaForChat(chatId: string): Promise<SavedMediaRecord[]> {
-  const index = await readIndex();
+  if (isDbEnabled()) return dbListSavedMediaForChat(chatId);
+  const index = await readIndexFile();
   return Object.values(index)
     .filter((item) => item.chatId === chatId && item.isViewOnce)
     .sort((a, b) => b.savedAt.localeCompare(a.savedAt));
@@ -97,17 +108,35 @@ export function mediaApiUrl(messageId: string): string {
 }
 
 export async function getMediaRecord(messageId: string): Promise<SavedMediaRecord | null> {
-  const index = await readIndex();
+  if (isDbEnabled()) return dbGetMediaRecord(messageId);
+  const index = await readIndexFile();
   return index[messageId] ?? null;
 }
 
 export async function getMediaAbsolutePath(messageId: string): Promise<string | null> {
+  if (isDbEnabled()) {
+    const record = await getMediaRecord(messageId);
+    return record ? `db://${messageId}` : null;
+  }
   const record = await getMediaRecord(messageId);
   if (!record) return null;
   return path.join(MEDIA_DIR, record.relativePath);
 }
 
+export async function getMediaBytes(messageId: string): Promise<Buffer | null> {
+  if (isDbEnabled()) return dbGetMediaBytes(messageId);
+  const filePath = await getMediaAbsolutePath(messageId);
+  if (!filePath) return null;
+  try {
+    const bytes = await readFile(filePath);
+    return bytes.byteLength ? bytes : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function mediaFileExists(messageId: string): Promise<boolean> {
+  if (isDbEnabled()) return dbMediaFileExists(messageId);
   const filePath = await getMediaAbsolutePath(messageId);
   if (!filePath) return false;
   try {
@@ -120,10 +149,14 @@ export async function mediaFileExists(messageId: string): Promise<boolean> {
 }
 
 export async function removeMediaRecord(messageId: string) {
-  const index = await readIndex();
+  if (isDbEnabled()) {
+    await dbRemoveMediaRecord(messageId);
+    return;
+  }
+  const index = await readIndexFile();
   if (!index[messageId]) return;
   delete index[messageId];
-  await writeIndex(index);
+  await writeIndexFile(index);
 }
 
 function normalizeBase64(data: string): string {
@@ -163,17 +196,10 @@ export async function saveMessageMediaFromWa(
   const downloaded = await msg.downloadMedia();
   if (!downloaded?.data) return null;
 
-  await fs.mkdir(MEDIA_DIR, { recursive: true });
-
   const ext = extFromMime(downloaded.mimetype, downloaded.filename);
-  const relativePath = path.join(accountId, `${fileToken(messageId)}.${ext}`);
-  const absolutePath = path.join(MEDIA_DIR, relativePath);
-  await fs.mkdir(path.dirname(absolutePath), { recursive: true });
-
+  const relativePath = path.join(accountId, `${fileToken(messageId)}.${ext}`).replace(/\\/g, "/");
   const bytes = Buffer.from(normalizeBase64(downloaded.data), "base64");
   if (bytes.length === 0) return null;
-
-  await fs.writeFile(absolutePath, bytes);
 
   const record: SavedMediaRecord = {
     id: messageId,
@@ -181,7 +207,7 @@ export async function saveMessageMediaFromWa(
     chatId,
     mimeType: downloaded.mimetype,
     filename: downloaded.filename || `${fileToken(messageId)}.${ext}`,
-    relativePath: relativePath.replace(/\\/g, "/"),
+    relativePath,
     messageType: msg.type,
     isViewOnce: isViewOnceMessage(msg),
     caption: msg.body || "",
@@ -189,9 +215,18 @@ export async function saveMessageMediaFromWa(
     savedAt: new Date().toISOString(),
   };
 
-  const index = await readIndex();
+  if (isDbEnabled()) {
+    return dbSaveMediaRecord(record, bytes);
+  }
+
+  await fs.mkdir(MEDIA_DIR, { recursive: true });
+  const absolutePath = path.join(MEDIA_DIR, relativePath);
+  await fs.mkdir(path.dirname(absolutePath), { recursive: true });
+  await fs.writeFile(absolutePath, bytes);
+
+  const index = await readIndexFile();
   index[messageId] = record;
-  await writeIndex(index);
+  await writeIndexFile(index);
 
   return record;
 }

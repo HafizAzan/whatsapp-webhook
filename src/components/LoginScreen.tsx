@@ -17,6 +17,7 @@ export function LoginScreen() {
   const { t } = useTranslation();
   const [method, setMethod] = useState<LoginMethod>("qr");
   const [state, setState] = useState<WhatsAppConnectionState | null>(null);
+  const [deploymentWarning, setDeploymentWarning] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [phone, setPhone] = useState("");
 
@@ -34,8 +35,13 @@ export function LoginScreen() {
   );
 
   const fetchStatus = useCallback(async () => {
-    const data = await safeFetchJson<WhatsAppConnectionState>("/api/whatsapp/status");
-    if (data) setState(data);
+    const data = await safeFetchJson<
+      WhatsAppConnectionState & { deploymentWarning?: string | null }
+    >("/api/whatsapp/status");
+    if (data) {
+      setState(data);
+      setDeploymentWarning(data.deploymentWarning ?? null);
+    }
     return data;
   }, []);
 
@@ -172,6 +178,12 @@ export function LoginScreen() {
         </div>
 
         <LanguageSwitcher />
+
+        {deploymentWarning && (
+          <div className="mb-4 rounded-xl border border-danger-soft bg-danger-soft p-4 text-sm leading-relaxed text-(--warning)">
+            {deploymentWarning}
+          </div>
+        )}
 
         {!isConnecting && (
           <div className="glass-card mb-4 p-4">

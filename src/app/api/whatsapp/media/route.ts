@@ -1,6 +1,5 @@
-import { readFile } from "fs/promises";
 import { NextRequest, NextResponse } from "next/server";
-import { getMediaAbsolutePath, getMediaRecord } from "@/lib/whatsapp/media-storage";
+import { getMediaBytes, getMediaRecord } from "@/lib/whatsapp/media-storage";
 import { requireWhatsAppAccount } from "@/lib/whatsapp/require-connected";
 
 export const runtime = "nodejs";
@@ -20,24 +19,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Media not found" }, { status: 404 });
   }
 
-  const filePath = await getMediaAbsolutePath(messageId);
-  if (!filePath) {
+  const bytes = await getMediaBytes(messageId);
+  if (!bytes?.byteLength) {
     return NextResponse.json({ error: "Media file missing" }, { status: 404 });
   }
 
-  try {
-    const bytes = await readFile(filePath);
-    if (!bytes.byteLength) {
-      return NextResponse.json({ error: "Media file empty" }, { status: 404 });
-    }
-    return new NextResponse(bytes, {
-      headers: {
-        "Content-Type": record.mimeType,
-        "Content-Disposition": `inline; filename="${record.filename.replace(/"/g, "")}"`,
-        "Cache-Control": "private, max-age=31536000, immutable",
-      },
-    });
-  } catch {
-    return NextResponse.json({ error: "Media file unreadable" }, { status: 404 });
-  }
+  return new NextResponse(new Uint8Array(bytes), {
+    headers: {
+      "Content-Type": record.mimeType,
+      "Content-Disposition": `inline; filename="${record.filename.replace(/"/g, "")}"`,
+      "Cache-Control": "private, max-age=31536000, immutable",
+    },
+  });
 }

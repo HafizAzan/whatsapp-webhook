@@ -8,6 +8,8 @@ import {
   accountSessionExists,
   clearAccountSession,
   clientIdForAccount,
+  getLinkedAccount,
+  clearSessionsForAccount,
   listLinkedAccounts,
   normalizeAccountId,
   removeLinkedAccount,
@@ -17,7 +19,7 @@ import {
   upsertLinkedAccount,
   type LinkedAccountSummary,
 } from "@/lib/whatsapp/account-registry";
-import { getChromeExecutablePath } from "@/lib/whatsapp/browser";
+import { getChromeLaunchConfig, getChromeNotFoundMessage } from "@/lib/whatsapp/browser";
 import {
   getMediaRecord,
   isMediaMessageType,
@@ -276,12 +278,13 @@ class WhatsAppManager {
         this.client = null;
       }
 
-      const executablePath = await getChromeExecutablePath();
-      if (!executablePath) {
-        throw new Error(
-          "Chrome not found. Run: npm run setup:chrome — or install Google Chrome browser."
-        );
+      const chrome = await getChromeLaunchConfig();
+      if (!chrome) {
+        throw new Error(getChromeNotFoundMessage());
       }
+
+      const { restoreSessionFromBlob } = await import("@/lib/whatsapp/session-blob");
+      await restoreSessionFromBlob(options.linkClientId);
 
       const client = new Client({
         authStrategy: new LocalAuth({
@@ -293,13 +296,8 @@ class WhatsAppManager {
           : {}),
         puppeteer: {
           headless: true,
-          executablePath,
-          args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--disable-dev-shm-usage",
-            "--disable-gpu",
-          ],
+          executablePath: chrome.executablePath,
+          args: chrome.args,
         },
       });
 
@@ -366,10 +364,26 @@ class WhatsAppManager {
 
   async removeAccount(accountId: string): Promise<WhatsAppAccountsSnapshot> {
     const normalized = this.normalizePhoneDigits(accountId);
-    if (this.state.phoneNumber === normalized && this.client) {
-      await this.disconnect({ removeSession: true });
+
+    try {
+      if (this.state.phoneNumber === normalized && this.client) {
+        await this.disconnect({ removeSession: true });
+      } else {
+        const linked = await getLinkedAccount(normalized);
+        await clearSessionsForAccount(normalized, linked?.clientId);
+      }
+    } catch (err) {
+      console.warn("removeAccount disconnect/session cleanup:", err);
+      this.client = null;
+      this.state = defaultState();
     }
-    await removeLinkedAccount(normalized);
+
+    try {
+      await removeLinkedAccount(normalized);
+    } catch (err) {
+      console.error("removeLinkedAccount failed:", err);
+    }
+
     return this.getAccountsSnapshot();
   }
 
@@ -1187,6 +1201,8 @@ class WhatsAppManager {
         if (connectedPhone && this.linkClientId) {
           await upsertLinkedAccount(connectedPhone, pushName, this.linkClientId);
           await setActiveAccountId(connectedPhone);
+          const { backupSessionToBlob } = await import("@/lib/whatsapp/session-blob");
+          void backupSessionToBlob(this.linkClientId);
         }
       } catch (err) {
         console.error("ready handler error:", err);

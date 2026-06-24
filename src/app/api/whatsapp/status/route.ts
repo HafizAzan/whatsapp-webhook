@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { getWhatsAppManager } from "@/lib/whatsapp/client";
+import { getWhatsAppDeploymentWarning } from "@/lib/whatsapp/deployment";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   const state = getWhatsAppManager().getState();
-  return NextResponse.json(state);
+  const deploymentWarning = getWhatsAppDeploymentWarning();
+  return NextResponse.json({ ...state, deploymentWarning });
 }

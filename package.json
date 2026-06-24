@@ -7,9 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "setup:chrome": "node scripts/install-chrome.js"
+    "setup:chrome": "node scripts/install-chrome.js",
+    "db:migrate": "node --env-file=.env.local scripts/migrate-to-postgres.mjs"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "@sparticuz/chromium": "^149.0.0",
+    "@vercel/blob": "^2.4.1",
     "i18next": "^26.3.2",
     "next": "16.2.9",
     "puppeteer": "^25.2.1",

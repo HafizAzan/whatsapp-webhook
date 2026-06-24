@@ -1,8 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["whatsapp-web.js", "puppeteer", "puppeteer-core"],
-  allowedDevOrigins: ["serve-unmanned-decibel.ngrok-free.dev"],
+  serverExternalPackages: [
+    "whatsapp-web.js",
+    "puppeteer",
+    "puppeteer-core",
+    "@sparticuz/chromium",
+    "@neondatabase/serverless",
+    "@vercel/blob",
+  ],
   experimental: {
     optimizePackageImports: ["i18next", "react-i18next"],
   },
