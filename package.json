@@ -2,9 +2,14 @@
   "name": "whatsapp-trigger-via-webhook",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
+    "clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\"",
+    "rebuild": "npm run clean && npm run build",
     "start": "next start",
     "lint": "eslint",
     "setup:chrome": "node scripts/install-chrome.js",

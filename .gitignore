@@ -46,3 +46,5 @@ next-env.d.ts
 /data/.puppeteer/
 /data/media/
 /data/media-index.json
+
+.vercel

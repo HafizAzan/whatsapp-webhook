@@ -8,7 +8,7 @@ export function getDataDir(): string {
   if (process.env.VERCEL) {
     return path.join("/tmp", "pulsebridge-data");
   }
-  return path.join(process.cwd(), "data");
+  return path.join(/* turbopackIgnore: true */ process.cwd(), "data");
 }
 
 export function getPuppeteerCacheDir(): string {

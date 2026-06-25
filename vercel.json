@@ -1,8 +1,0 @@
-{
-  "functions": {
-    "src/app/api/whatsapp/**/*.ts": {
-      "maxDuration": 300,
-      "memory": 3008
-    }
-  }
-}
