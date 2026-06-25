@@ -4,6 +4,11 @@ import { getPuppeteerCacheDir } from "@/lib/data-dir";
 import { isVercelServerless, getChromeSetupHint } from "@/lib/whatsapp/deployment";
 
 process.env.PUPPETEER_CACHE_DIR = getPuppeteerCacheDir();
+process.env.PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true";
+process.env.PUPPETEER_SKIP_DOWNLOAD = "true";
+
+const DEFAULT_CHROMIUM_PACK_URL =
+  "https://github.com/Sparticuz/chromium/releases/download/v149.0.0/chromium-v149.0.0-pack.x64.tar";
 
 const WINDOWS_CHROME_PATHS = [
   path.join(process.env.LOCALAPPDATA || "", "Google", "Chrome", "Application", "chrome.exe"),
@@ -21,23 +26,23 @@ const LINUX_CHROME_PATHS = [
 export interface ChromeLaunchConfig {
   executablePath: string;
   args: string[];
+  headless?: boolean | "shell";
+  defaultViewport?: { width: number; height: number } | null;
 }
 
 export async function getChromeLaunchConfig(): Promise<ChromeLaunchConfig | null> {
   if (isVercelServerless()) {
-    try {
-      const chromiumMod = await import("@sparticuz/chromium");
-      const chromium = chromiumMod.default;
-      const executablePath = await chromium.executablePath();
-      if (executablePath) {
-        return {
-          executablePath,
-          args: [...chromium.args, "--disable-dev-shm-usage", "--single-process"],
-        };
-      }
-    } catch (err) {
-      console.error("Vercel chromium load failed:", err);
-    }
+    const vercelConfig = await getVercelChromiumConfig();
+    if (vercelConfig) return vercelConfig;
+  }
+
+  const localChrome = process.env.CHROMIUM_LOCAL_EXEC_PATH;
+  if (localChrome && existsSync(localChrome)) {
+    return {
+      executablePath: localChrome,
+      args: defaultChromeArgs(),
+      headless: true,
+    };
   }
 
   const bundled = await tryBundledChromePath();
@@ -45,6 +50,7 @@ export async function getChromeLaunchConfig(): Promise<ChromeLaunchConfig | null
     return {
       executablePath: bundled,
       args: defaultChromeArgs(),
+      headless: true,
     };
   }
 
@@ -53,11 +59,40 @@ export async function getChromeLaunchConfig(): Promise<ChromeLaunchConfig | null
       return {
         executablePath: chromePath,
         args: defaultChromeArgs(),
+        headless: true,
       };
     }
   }
 
   return null;
+}
+
+async function getVercelChromiumConfig(): Promise<ChromeLaunchConfig | null> {
+  const remotePack =
+    process.env.CHROMIUM_REMOTE_EXEC_PATH?.trim() || DEFAULT_CHROMIUM_PACK_URL;
+
+  try {
+    const chromiumMod = await import("@sparticuz/chromium-min");
+    const chromium = chromiumMod.default;
+    const executablePath = await chromium.executablePath(remotePack);
+
+    if (!executablePath) {
+      console.error("Vercel chromium: executablePath empty");
+      return null;
+    }
+
+    process.env.PUPPETEER_EXECUTABLE_PATH = executablePath;
+
+    return {
+      executablePath,
+      args: [...chromium.args, "--disable-dev-shm-usage", "--no-zygote"],
+      headless: chromium.headless,
+      defaultViewport: chromium.defaultViewport,
+    };
+  } catch (err) {
+    console.error("Vercel chromium-min load failed:", err);
+    return null;
+  }
 }
 
 export async function getChromeExecutablePath(): Promise<string | undefined> {
@@ -71,6 +106,16 @@ export function getChromeNotFoundMessage(): string {
 
 async function tryBundledChromePath(): Promise<string | undefined> {
   try {
+    const puppeteer = await import("puppeteer-core");
+    const bundled = await puppeteer.default.executablePath();
+    if (bundled && existsSync(bundled)) {
+      return bundled;
+    }
+  } catch {
+    // fall through
+  }
+
+  try {
     const puppeteer = await import("puppeteer");
     const bundled = await puppeteer.default.executablePath();
     if (bundled && existsSync(bundled)) {
@@ -79,6 +124,7 @@ async function tryBundledChromePath(): Promise<string | undefined> {
   } catch {
     // fall through
   }
+
   return undefined;
 }
 

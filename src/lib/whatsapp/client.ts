@@ -295,9 +295,10 @@ class WhatsAppManager {
           ? { pairWithPhoneNumber: options.pairWithPhoneNumber }
           : {}),
         puppeteer: {
-          headless: true,
+          headless: chrome.headless ?? true,
           executablePath: chrome.executablePath,
           args: chrome.args,
+          ...(chrome.defaultViewport ? { defaultViewport: chrome.defaultViewport } : {}),
         },
       });
 

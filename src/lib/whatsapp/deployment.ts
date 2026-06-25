@@ -30,8 +30,8 @@ export function getWhatsAppDeploymentWarning(): string | null {
 export function getChromeSetupHint(): string {
   if (isVercelServerless()) {
     return (
-      "Vercel par Chrome load nahi hua. Redeploy karein aur Vercel Pro (300s timeout) use karein. " +
-      "Functions → whatsapp routes memory 3008 MB set karein."
+      "Vercel par Chrome load nahi hua. CHROMIUM_REMOTE_EXEC_PATH env var check karein, " +
+      "Vercel Pro plan (300s timeout, 3008 MB memory) use karein, phir redeploy."
     );
   }
   return "Chrome not found. Run: npm run setup:chrome — or install Google Chrome browser.";
