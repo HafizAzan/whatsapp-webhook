@@ -86,8 +86,7 @@ async function getVercelChromiumConfig(): Promise<ChromeLaunchConfig | null> {
     return {
       executablePath,
       args: [...chromium.args, "--disable-dev-shm-usage", "--no-zygote"],
-      headless: chromium.headless,
-      defaultViewport: chromium.defaultViewport,
+      headless: "shell",
     };
   } catch (err) {
     console.error("Vercel chromium-min load failed:", err);
