@@ -2,8 +2,8 @@ import { ensureDbSchema, getSql } from "@/lib/db/schema";
 import type { LinkedAccountRecord } from "@/lib/whatsapp/account-registry";
 
 type AccountRow = {
-  account_id: string;
   client_id: string;
+  account_id: string;
   push_name: string | null;
   linked_at: Date | string;
   last_connected_at: Date | string;
